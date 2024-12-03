@@ -1,4 +1,4 @@
-Query 4
+Query 3
 
 -- Use a CTE to count the badges for each user.
 WITH BadgeCounts AS (
