@@ -1,4 +1,4 @@
-Query 5
+Query 4
 
 -- This query analyzes post activity by hour of day.
 -- It calculates the total posts and average score for each creation hour,
