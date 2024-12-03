@@ -1,0 +1,81 @@
+Query 2
+
+-- This query retrieves the basic details of posts created in the last 7 days (relative to the current date and time).
+-- It fetches:
+--   1. Post ID (`posts.Id`)
+--   2. Post creation date (`posts.CreationDate`)
+--   3. The display name of the owner of the post (`users.DisplayName`)
+-- The query uses the `NOW()` function to filter posts created within the last 7 days.
+-- It does not include sorting or any additional details about comments, votes, or user metadata.
+
+SELECT 
+    posts.Id AS PostId,                  -- The unique identifier of the post
+    posts.CreationDate,                  -- The timestamp when the post was created
+    users.DisplayName AS OwnerDisplayName -- The display name of the post's owner
+FROM 
+    posts
+JOIN 
+    users ON posts.OwnerUserId = users.Id -- Joining the `posts` and `users` tables to associate posts with their owners
+WHERE 
+    posts.CreationDate >= NOW() - INTERVAL '7 days'; -- Filter posts created in the last 7 days
+
+
+===============================================================
+
+-- This query is similar to Query 1 but uses a fixed date (`2014-09-14`) as a base for calculating the 7-day window.
+-- It fetches the same details as Query 1 but adds an `ORDER BY` clause to sort the results by `posts.CreationDate` in descending order.
+-- This makes it useful for displaying the most recent posts first.
+-- Differences from Query 1:
+--   1. Instead of `NOW()`, it uses a fixed reference date.
+--   2. It includes sorting by creation date in descending order.
+
+SELECT 
+    posts.Id AS PostId,                  -- The unique identifier of the post
+    posts.CreationDate,                  -- The timestamp when the post was created
+    users.DisplayName AS OwnerDisplayName -- The display name of the post's owner
+FROM 
+    posts
+JOIN 
+    users ON posts.OwnerUserId = users.Id -- Joining the `posts` and `users` tables to associate posts with their owners
+WHERE 
+    posts.CreationDate >= (DATE '2014-09-14' - INTERVAL '7 days') -- Filter posts created within the 7 days before '2014-09-14'
+ORDER BY 
+    posts.CreationDate DESC; -- Sort results by creation date in descending order
+
+
+===============================================================
+
+-- This query expands upon Query 2 to provide much more detailed information about posts.
+-- It retrieves additional details such as:
+--   1. The user's reputation (`users.Reputation`)
+--   2. The number of comments on the post (`CommentCount`)
+--   3. The number of votes the post has received (`VoteCount`)
+--   4. Post tags (`posts.Tags`)
+--   5. Post score (`posts.Score`)
+--   6. The age of the post in days (`PostAgeInDays`)
+-- The query also groups data to correctly aggregate comment and vote counts for each post.
+
+SELECT 
+    posts.Id AS PostId,                        -- The unique identifier of the post
+    posts.CreationDate,                        -- The timestamp when the post was created
+    users.DisplayName AS OwnerDisplayName,     -- The display name of the post's owner
+    users.Reputation AS OwnerReputation,       -- The reputation of the user who created the post
+    COUNT(comments.Id) AS CommentCount,        -- The total number of comments associated with the post
+    COUNT(votes.Id) AS VoteCount,              -- The total number of votes associated with the post
+    posts.Tags,                                -- The tags associated with the post
+    posts.Score,                               -- The score of the post (upvotes minus downvotes)
+    EXTRACT(DAY FROM NOW() - posts.CreationDate) AS PostAgeInDays -- The age of the post in days
+FROM 
+    posts
+JOIN 
+    users ON posts.OwnerUserId = users.Id      -- Joining `posts` with `users` to retrieve owner details
+LEFT JOIN 
+    comments ON comments.PostId = posts.Id    -- Left join to include comment counts, even if a post has no comments
+LEFT JOIN 
+    votes ON votes.PostId = posts.Id          -- Left join to include vote counts, even if a post has no votes
+WHERE 
+    posts.CreationDate >= (DATE '2014-09-14' - INTERVAL '7 days') -- Filter posts created within the 7 days before '2014-09-14'
+GROUP BY 
+    posts.Id, users.Id                        -- Group by post and user IDs to aggregate comments and votes correctly
+ORDER BY 
+    posts.CreationDate DESC;                  -- Sort results by creation date in descending order
