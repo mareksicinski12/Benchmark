@@ -18,4 +18,5 @@ WHERE
     u.Reputation > 10000  
 	AND p.Title IS NOT NULL
 ORDER BY 
-    u.Reputation DESC, p.Score DESC;
+    u.Reputation DESC, 
+	p.Score DESC
