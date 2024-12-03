@@ -1,4 +1,4 @@
-Query 6
+Query 5
 
 -- Query to retrieve posts with JSON-formatted tags and accurate tag counts
 SELECT 
