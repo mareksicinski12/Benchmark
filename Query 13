@@ -1,4 +1,4 @@
-Query 1 
+Query 13 
 
 -- Base Query: Retrieve the top 10 users by reputation with their post count
 SELECT 
