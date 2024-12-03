@@ -1,0 +1,31 @@
+Query 5
+
+-- This query analyzes post activity by hour of day.
+-- It calculates the total posts and average score for each creation hour,
+-- and includes subtotals (for all hours combined) and grand totals using GROUPING SETS.
+WITH PostActivityByHour AS (
+    SELECT 
+        EXTRACT(HOUR FROM posts.CreationDate) AS CreationHour, -- Extracts the hour from the post's creation timestamp
+        COUNT(posts.Id) AS TotalPosts,                        -- Total number of posts created in this hour
+        ROUND(AVG(posts.Score), 2) AS AverageScore            -- Average score of posts created in this hour (rounded to 2 decimals)
+    FROM 
+        posts
+    GROUP BY 
+        GROUPING SETS (
+            (EXTRACT(HOUR FROM posts.CreationDate)),          -- Group by each individual hour of the day
+            ()                                                -- Include a grand total (all hours combined)
+        )
+)
+SELECT 
+    CreationHour,           -- The hour of post creation (NULL for grand total)
+    TotalPosts,             -- Total posts created in this hour
+    AverageScore,           -- Average score of posts created in this hour
+    CASE 
+        WHEN CreationHour IS NULL THEN 1 
+        ELSE 0 
+    END AS IsTotal          -- Marks rows as grand total (1) or not (0)
+FROM 
+    PostActivityByHour
+ORDER BY 
+    CASE WHEN CreationHour IS NULL THEN 1 ELSE 0 END, -- Ensures the grand total appears last
+    CreationHour;
