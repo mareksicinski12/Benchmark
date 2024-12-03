@@ -1,4 +1,4 @@
-Query 2
+Query 1
 
 -- This query retrieves the basic details of posts created in the last 7 days (relative to the current date and time).
 -- It fetches:
