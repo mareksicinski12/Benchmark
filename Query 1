@@ -1,12 +1,10 @@
 Query 1
 
--- This query retrieves the basic details of posts created in the last 7 days (relative to the current date and time).
+-- This query retrieves the basic details of posts created in the last 7 days
 -- It fetches:
---   1. Post ID (`posts.Id`)
---   2. Post creation date (`posts.CreationDate`)
---   3. The display name of the owner of the post (`users.DisplayName`)
--- The query uses the `NOW()` function to filter posts created within the last 7 days.
--- It does not include sorting or any additional details about comments, votes, or user metadata.
+--   1. Post ID 
+--   2. Post creation date 
+--   3. The display name of the owner of the post
 
 SELECT 
     posts.Id AS PostId,                  -- The unique identifier of the post
@@ -21,13 +19,6 @@ WHERE
 
 
 ===============================================================
-
--- This query is similar to Query 1 but uses a fixed date (`2014-09-14`) as a base for calculating the 7-day window.
--- It fetches the same details as Query 1 but adds an `ORDER BY` clause to sort the results by `posts.CreationDate` in descending order.
--- This makes it useful for displaying the most recent posts first.
--- Differences from Query 1:
---   1. Instead of `NOW()`, it uses a fixed reference date.
---   2. It includes sorting by creation date in descending order.
 
 SELECT 
     posts.Id AS PostId,                  -- The unique identifier of the post
@@ -45,14 +36,13 @@ ORDER BY
 
 ===============================================================
 
--- This query expands upon Query 2 to provide much more detailed information about posts.
--- It retrieves additional details such as:
---   1. The user's reputation (`users.Reputation`)
---   2. The number of comments on the post (`CommentCount`)
---   3. The number of votes the post has received (`VoteCount`)
---   4. Post tags (`posts.Tags`)
---   5. Post score (`posts.Score`)
---   6. The age of the post in days (`PostAgeInDays`)
+-- The query retrieves the details such as:
+--   1. The user's reputation
+--   2. The number of comments on the post
+--   3. The number of votes the post has received
+--   4. Post tags
+--   5. Post score
+--   6. The age of the post in days
 -- The query also groups data to correctly aggregate comment and vote counts for each post.
 
 SELECT 
