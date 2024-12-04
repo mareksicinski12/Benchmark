@@ -236,9 +236,8 @@ LIMIT 10;
 
 ===============================================================================================
 
--- Common Table Expression (CTE) for post-related metrics
--- This CTE calculates the total number of posts, cumulative score, 
--- first post date, and last post date for each user.
+-- CTE for post-related metrics
+-- Calculates the total number of posts, cumulative score, first post date, and last post date for each user.
 WITH UserMetrics AS (
     SELECT 
         p.OwnerUserId AS UserId,      -- The user who owns the post
@@ -252,8 +251,8 @@ WITH UserMetrics AS (
         p.OwnerUserId                 -- Group by user to calculate metrics per user
 ),
 
--- Common Table Expression (CTE) for user reputation rankings
--- This CTE ranks users based on their reputation in descending order.
+-- CTE for user reputation rankings
+-- Ranks users based on their reputation in descending order.
 UserRankings AS (
     SELECT 
         u.Id AS UserId,               -- User ID
@@ -263,7 +262,6 @@ UserRankings AS (
         users u
 )
 
--- Main Query
 SELECT 
     u.Id,                             -- User ID
     u.DisplayName,                    -- User's display name
@@ -271,7 +269,7 @@ SELECT
     COALESCE(um.PostCount, 0) AS PostCount, -- Total number of posts, default to 0 if no posts
     COALESCE(um.TotalScore, 0) AS TotalScore, -- Cumulative score of posts, default to 0 if no posts
 
-    -- Subquery to find the best (highest-scoring) post for the user
+    -- Best post for the user
     COALESCE(
         CONCAT('BEST POST: ', (
             SELECT 
@@ -302,7 +300,7 @@ SELECT
         ' already!'
     ) AS Membership,
 
-    -- Subquery to count the number of badges for the user
+    -- Count the number of badges for the user
     (SELECT COUNT(*) FROM badges b WHERE b.UserId = u.Id) AS BadgeCount,
 
     -- User's reputation rank from the UserRankings CTE
@@ -316,7 +314,7 @@ SELECT
     ROUND(
         CASE 
             WHEN (u.UpVotes + u.DownVotes) > 0 THEN 
-                (u.UpVotes::NUMERIC / (u.UpVotes + u.DownVotes)) * 100 -- Upvote percentage formula
+                (u.UpVotes::NUMERIC / (u.UpVotes + u.DownVotes)) * 100 -- Upvote percentage
             ELSE 
                 0 -- Default to 0 if no votes
         END, 2
