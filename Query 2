@@ -19,9 +19,6 @@ LIMIT 5;                               -- Limit the result to the top 5 users wi
 
 ==============================================================
 
--- This query uses window functions to rank users based on their average post score dynamically.
--- It also includes the user's reputation, total post count, and dynamically ranks all users.
-
 SELECT 
     users.Id AS UserId,                    -- The unique ID of the user
     users.DisplayName AS UserName,         -- The display name of the user
