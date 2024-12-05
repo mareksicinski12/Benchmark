@@ -1,0 +1,218 @@
+SELECT 
+    u.Id, 
+    u.DisplayName, 
+    u.Reputation, 
+    COUNT(p.Id) AS PostCount
+FROM 
+    users u
+LEFT JOIN 
+    posts p ON u.Id = p.OwnerUserId
+GROUP BY 
+    u.Id, u.DisplayName, u.Reputation
+ORDER BY 
+    u.Reputation DESC
+LIMIT 10;
+
+=======================================================
+
+SELECT 
+    u.Id,
+    u.DisplayName,
+    u.Reputation,
+    COUNT(p.Id) AS PostCount,
+    COALESCE(
+        CONCAT('BEST POST: ', (
+            SELECT 
+                COALESCE(p1.Title, 'No Title')
+            FROM 
+                posts p1
+            WHERE 
+                p1.OwnerUserId = u.Id
+            ORDER BY 
+                p1.Score DESC
+            LIMIT 1
+        )),
+        'No Title'
+    ) AS BestPost
+FROM 
+    users u
+LEFT JOIN 
+    posts p ON u.Id = p.OwnerUserId
+GROUP BY 
+    u.Id, u.DisplayName, u.Reputation
+ORDER BY 
+    u.Reputation DESC
+LIMIT 10;
+
+=======================================================
+
+SELECT 
+    u.Id,
+    u.DisplayName,
+    u.Reputation,
+    COUNT(p.Id) AS PostCount,
+    COALESCE(
+        CONCAT('BEST POST: ', (
+            SELECT 
+                COALESCE(p1.Title, 'No Title')
+            FROM 
+                posts p1
+            WHERE 
+                p1.OwnerUserId = u.Id
+            ORDER BY 
+                p1.Score DESC
+            LIMIT 1
+        )),
+        'No Title'
+    ) AS BestPost,
+    CONCAT(
+        u.DisplayName, 
+        ' is with us for: ',
+        EXTRACT(YEAR FROM AGE(NOW(), u.CreationDate))::TEXT, 
+        ' years',
+        CASE
+            WHEN EXTRACT(MONTH FROM AGE(NOW(), u.CreationDate)) > 0 THEN
+                CONCAT(' and ', EXTRACT(MONTH FROM AGE(NOW(), u.CreationDate))::TEXT, ' months')
+            ELSE
+                ''
+        END,
+        ' already!'
+    ) AS Membership
+FROM 
+    users u
+LEFT JOIN 
+    posts p ON u.Id = p.OwnerUserId
+GROUP BY 
+    u.Id, u.DisplayName, u.Reputation
+ORDER BY 
+    u.Reputation DESC
+LIMIT 10;
+
+=======================================================
+
+SELECT 
+    u.Id,
+    u.DisplayName,
+    u.Reputation,
+    COUNT(p.Id) AS PostCount,
+    COALESCE(
+        CONCAT('BEST POST: ', (
+            SELECT 
+                COALESCE(p1.Title, 'No Title')
+            FROM 
+                posts p1
+            WHERE 
+                p1.OwnerUserId = u.Id
+            ORDER BY 
+                p1.Score DESC
+            LIMIT 1
+        )),
+        'No Title'
+    ) AS BestPost,
+    CONCAT(
+        u.DisplayName, 
+        ' is with us for: ',
+        EXTRACT(YEAR FROM AGE(NOW(), u.CreationDate))::TEXT, 
+        ' years',
+        CASE
+            WHEN EXTRACT(MONTH FROM AGE(NOW(), u.CreationDate)) > 0 THEN
+                CONCAT(' and ', EXTRACT(MONTH FROM AGE(NOW(), u.CreationDate))::TEXT, ' months')
+            ELSE
+                ''
+        END,
+        ' already!'
+    ) AS Membership,
+    ROUND(
+        CASE 
+            WHEN (u.UpVotes + u.DownVotes) > 0 THEN 
+                (u.UpVotes::NUMERIC / (u.UpVotes + u.DownVotes)) * 100
+            ELSE 
+                0
+        END, 2
+    ) AS UpvotePercentage
+FROM 
+    users u
+LEFT JOIN 
+    posts p ON u.Id = p.OwnerUserId
+GROUP BY 
+    u.Id, u.DisplayName, u.Reputation
+ORDER BY 
+    u.Reputation DESC
+LIMIT 10;
+
+=======================================================
+
+WITH UserMetrics AS (
+    SELECT 
+        p.OwnerUserId AS UserId, 
+        COUNT(p.Id) AS PostCount, 
+        SUM(p.Score) AS TotalScore, 
+        MIN(p.CreationDate) AS FirstPostDate, 
+        MAX(p.CreationDate) AS LastPostDate
+    FROM 
+        posts p
+    GROUP BY 
+        p.OwnerUserId
+),
+UserRankings AS (
+    SELECT 
+        u.Id AS UserId, 
+        u.Reputation, 
+        RANK() OVER (ORDER BY u.Reputation DESC) AS ReputationRank
+    FROM 
+        users u
+)
+SELECT 
+    u.Id, 
+    u.DisplayName, 
+    u.Reputation, 
+    COALESCE(um.PostCount, 0) AS PostCount, 
+    COALESCE(um.TotalScore, 0) AS TotalScore,
+    COALESCE(
+        CONCAT('BEST POST: ', (
+            SELECT 
+                COALESCE(p1.Title, 'No Title')
+            FROM 
+                posts p1
+            WHERE 
+                p1.OwnerUserId = u.Id
+            ORDER BY 
+                p1.Score DESC
+            LIMIT 1
+        )),
+        'No Title'
+    ) AS BestPost,
+    CONCAT(
+        u.DisplayName, 
+        ' is with us for: ',
+        EXTRACT(YEAR FROM AGE(NOW(), u.CreationDate))::TEXT, 
+        ' years',
+        CASE
+            WHEN EXTRACT(MONTH FROM AGE(NOW(), u.CreationDate)) > 0 THEN
+                CONCAT(' and ', EXTRACT(MONTH FROM AGE(NOW(), u.CreationDate))::TEXT, ' months')
+            ELSE
+                ''
+        END,
+        ' already!'
+    ) AS Membership,
+    (SELECT COUNT(*) FROM badges b WHERE b.UserId = u.Id) AS BadgeCount,
+    ur.ReputationRank,
+    COALESCE(um.FirstPostDate, NULL) AS FirstPostDate,
+    COALESCE(um.LastPostDate, NULL) AS LastPostDate,
+    ROUND(
+        CASE 
+            WHEN (u.UpVotes + u.DownVotes) > 0 THEN 
+                (u.UpVotes::NUMERIC / (u.UpVotes + u.DownVotes)) * 100
+            ELSE 
+                0
+        END, 2
+    ) AS UpvotePercentage
+FROM 
+    users u
+LEFT JOIN 
+    UserMetrics um ON u.Id = um.UserId
+LEFT JOIN 
+    UserRankings ur ON u.Id = ur.UserId
+ORDER BY 
+    u.Reputation DESC
+LIMIT 10;
