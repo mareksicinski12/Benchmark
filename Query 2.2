@@ -1,0 +1,36 @@
+SELECT 
+    users.Id AS UserId, 
+    users.DisplayName AS UserName, 
+    AVG(posts.Score) AS AverageScore
+FROM 
+    users
+JOIN 
+    posts ON users.Id = posts.OwnerUserId
+GROUP BY 
+    users.Id, 
+    users.DisplayName
+ORDER BY 
+    AverageScore DESC
+LIMIT 5;
+
+=======================================================
+
+SELECT 
+    users.Id AS UserId, 
+    users.DisplayName AS UserName, 
+    users.Reputation AS UserReputation, 
+    COUNT(posts.Id) AS TotalPosts, 
+    AVG(posts.Score) AS AverageScore, 
+    RANK() OVER (ORDER BY AVG(posts.Score) DESC) AS Rank
+FROM 
+    users
+JOIN 
+    posts ON users.Id = posts.OwnerUserId
+WHERE 
+    posts.CreationDate >= (DATE '2014-09-14' - INTERVAL '1 year')
+GROUP BY 
+    users.Id, users.DisplayName, users.Reputation
+HAVING 
+    COUNT(posts.Id) > 10
+ORDER BY 
+    Rank ASC;
