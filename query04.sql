@@ -1,4 +1,4 @@
--- Combine most active user data with overall hourly data and compare scores
+-- Combined most active user data with overall hourly data to compare scores
 WITH HourlyActivity AS (
     SELECT
         EXTRACT(HOUR FROM CreationDate) AS Hour,
