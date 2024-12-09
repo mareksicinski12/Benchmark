@@ -1,4 +1,4 @@
--- Use a CTE to count the badges for each user
+-- CTE to count the badges for each user
 WITH BadgeCounts AS (
     SELECT 
         users.Id AS UserId,
