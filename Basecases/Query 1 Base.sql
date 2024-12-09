@@ -1,4 +1,4 @@
--- This query retrieves the basic details of posts created in the last 7 days
+-- Retrieves the basic details of posts created in the last 7 days
 
 SELECT 
     posts.Id AS PostId,
