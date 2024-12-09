@@ -1,4 +1,4 @@
--- Find the top 5 users with the highest average score on their posts
+-- Top 5 users with the highest average score on their posts
 SELECT 
     users.Id AS UserId,
     users.DisplayName AS UserName,
