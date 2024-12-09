@@ -1,4 +1,4 @@
--- top 10 users by reputation and their post counts
+-- Top 10 users by reputation and their post counts
 SELECT 
     u.Id,
     u.DisplayName,
