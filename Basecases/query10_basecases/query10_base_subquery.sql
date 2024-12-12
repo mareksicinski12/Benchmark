@@ -18,19 +18,19 @@ FROM
 	) bc ON u.Id = bc.UserId
 	JOIN (
 		SELECT 
-        p.OwnerUserId,
-        COUNT(p.Id) AS AcceptedAnswerCount
-    	FROM 
-        posts p
-    	WHERE 
-        	p.PostTypeId = 2 
-        	AND p.Id IN (
-            	SELECT AcceptedAnswerId 
-            	FROM posts
-            	WHERE AcceptedAnswerId IS NOT NULL
-        	) 
-    	GROUP BY 
-        	p.OwnerUserId
+        		p.OwnerUserId,
+		        COUNT(p.Id) AS AcceptedAnswerCount
+    		FROM 
+        		posts p
+    		WHERE 
+        		p.PostTypeId = 2 
+        		AND p.Id IN (
+            		SELECT AcceptedAnswerId 
+            		FROM posts
+            		WHERE AcceptedAnswerId IS NOT NULL
+        		) 
+    		GROUP BY 
+        		p.OwnerUserId
 	) ua ON u.Id = ua.OwnerUserId
 	JOIN 
 		posts p ON u.Id = p.OwnerUserId
@@ -39,5 +39,5 @@ WHERE
 	AND ua.AcceptedAnswerCount > 5
 	AND p.Title IS NOT NULL
 ORDER BY 
-    u.Reputation DESC, 
-	  p.CreationDate DESC
+    	u.Reputation DESC, 
+	p.CreationDate DESC
