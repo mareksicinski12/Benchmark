@@ -17,7 +17,7 @@
 | 12        | Identify users with a reputation over 10,000 and their posts with scores greater than the average score. | Joins, Window Functions, Subqueries      | Users meeting the reputation threshold with their posts above the average score.|
 | 13        | Find interesting stats about the top 10 users. | Subquery, Date Functions, Joins, CTE, Window Functions | Features about users     
 | 14        | ON-ROAD surprise  | - | -                                                      |
-| 15        | WRONG-ROAD surprise  | - | -                                                   |
+| 15        | [WRONG-ROAD surprise] Build a recursive query to find all posts linked through postLinks with a depth of 5. | Recursive CTE, Joins |  explore postLinks table up to 5 levels of depth, testing recursion limits.                                                   |
 | 16        | OFF-ROAD surprise  | - | -                                                     |
 
 
