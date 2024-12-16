@@ -15,4 +15,9 @@
 | 10        | Retrieve users with more than 10 badges and display their post details if they have over 5 accepted answers. | Joins, Subqueries, CTEs (later array for titles)                        | List of qualified users with their corresponding post details.                  |
 | 11        | List all badges awarded in the past 30 days and group them by day and hour of award. | Time Functions, GROUPING SETS            | Badges grouped by both day and hour, showing counts per group.                  |
 | 12        | Identify users with a reputation over 10,000 and their posts with scores greater than the average score. | Joins, Window Functions, Subqueries      | Users meeting the reputation threshold with their posts above the average score.|
-| 13        | Find interesting stats about the top 10 users. | Subquery, Date Functions, Joins, CTE, Window Functions | Features about users                                                          |
+| 13        | Find interesting stats about the top 10 users. | Subquery, Date Functions, Joins, CTE, Window Functions | Features about users     
+| 14        | ON-ROAD surprise  | - | -                                                      |
+| 15        | WRONG-ROAD surprise  | - | -                                                   |
+| 16        | OFF-ROAD surprise  | - | -                                                     |
+
+
