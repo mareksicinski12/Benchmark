@@ -16,7 +16,7 @@
 | 11        | List all badges awarded in the past 30 days and group them by day and hour of award. | Time Functions, GROUPING SETS            | Badges grouped by both day and hour, showing counts per group.                  |
 | 12        | Identify users with a reputation over 10,000 and their posts with scores greater than the average score. | Joins, Window Functions, Subqueries      | Users meeting the reputation threshold with their posts above the average score.|
 | 13        | Find interesting stats about the top 10 users. | Subquery, Date Functions, Joins, CTE, Window Functions | Features about users     
-| 14        | ON-ROAD surprise  | - | -                                                      |
+| 14        | -  | - | -                                                      |
 | 15        | [WRONG-ROAD surprise] Build a recursive query to find all posts linked through postLinks with a depth of 5. | Recursive CTE, Joins |  explore postLinks table up to 5 levels of depth, testing recursion limits.                                                   |
 | 16        | [OFF-ROAD surprise]  fetch posts where title length exceeds 50 characters using 15+ nested subqueries. |  Deeply Nested Subqueries | Tests the system’s handling of extremely long and deeply nested query structures.                                                    | 
 
