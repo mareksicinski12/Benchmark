@@ -18,6 +18,6 @@
 | 13        | Find interesting stats about the top 10 users. | Subquery, Date Functions, Joins, CTE, Window Functions | Features about users     
 | 14        | ON-ROAD surprise  | - | -                                                      |
 | 15        | [WRONG-ROAD surprise] Build a recursive query to find all posts linked through postLinks with a depth of 5. | Recursive CTE, Joins |  explore postLinks table up to 5 levels of depth, testing recursion limits.                                                   |
-| 16        | OFF-ROAD surprise  | - | -                                                     |
+| 16        | [OFF-ROAD surprise]  fetch posts where title length exceeds 50 characters using 15+ nested subqueries. |  Deeply Nested Subqueries | Tests the system’s handling of extremely long and deeply nested query structures.                                                    | 
 
 
