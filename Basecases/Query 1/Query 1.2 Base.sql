@@ -1,4 +1,4 @@
---Using Subquery in the SELECT Clause
+-- Using Subquery in the SELECT Clause
 SELECT 
     posts.Id AS PostId,
     posts.CreationDate,
