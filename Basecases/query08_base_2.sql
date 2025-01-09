@@ -1,5 +1,5 @@
---query8base2
--- Replace the UNNEST with a subquery to handle tags.
+
+-- Replacing the UNNEST with a subquery to handle tags.
 SELECT 
 	TagName,
 	COUNT(Id) AS PostCount,
