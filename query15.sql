@@ -10,7 +10,9 @@ WITH RECURSIVE UserInteractions AS (
 		c.UserId IS NOT NULL 
 		AND p.OwnerUserId IS NOT NULL
 	
+	
     UNION 
+	
 	
     SELECT 
 		ui.User2 AS User1, p.OwnerUserId AS User2
