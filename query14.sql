@@ -11,7 +11,9 @@ WITH RECURSIVE PostHierarchy AS (
         Body 
     FROM posts
     WHERE ParentId IS NULL
+    
     UNION ALL
+    
     SELECT 
         p.Id AS PostId, 
         p.ParentId, 
