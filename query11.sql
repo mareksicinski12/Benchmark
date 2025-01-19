@@ -31,5 +31,6 @@ FROM
     UserStats
 ORDER BY 
     TotalComments DESC, AvgCommentScore DESC
+LIMIT 1 OFFSET 2
 
 	
