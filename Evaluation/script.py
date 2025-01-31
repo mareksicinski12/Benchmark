@@ -17,8 +17,8 @@ database = 'kp'
 username = 'postgres'
 pwd = '8c11841ab9'
 port_id = 5432
-pg_conn = None  # Initialize here to avoid NameError
-cursor = None  # Initialize here
+pg_conn = None  
+cursor = None  
 
 @dataclass
 class QueryResult:
@@ -30,7 +30,7 @@ class QueryResult:
 
 results: list[QueryResult] = []
 
-# Define your 16 queries here
+
 queries = [
     ("Q12_CTE", "WITH AvgPostScore AS (SELECT AVG(p.Score) AS AverageScore FROM posts p) SELECT u.Id AS UserId,u.DisplayName AS UserDisplayName,p.Id AS PostId,p.Title AS PostTitle, p.Score AS PostScore FROM users u JOIN posts p ON u.Id = p.OwnerUserId JOIN AvgPostScore aps ON p.Score > aps.AverageScore WHERE u.Reputation > 10000 AND p.Title IS NOT NULL ORDER BY u.Reputation DESC, p.Score DESC;"),
     ("Q12_SUBQUERY", "WITH AvgPostScore AS (SELECT AVG(p.Score) AS AverageScore FROM posts p ) SELECT u.Id AS UserId, u.DisplayName AS UserDisplayName, p.Id AS PostId, p.Title AS PostTitle, p.Score AS PostScore FROM users u  JOIN posts p ON u.Id = p.OwnerUserId  JOIN (SELECT AVG(p.Score) AS AverageScore FROM posts p) aps ON p.Score > aps.AverageScore WHERE u.Reputation > 10000 AND p.Title IS NOT NULL ORDER BY u.Reputation DESC, p.Score DESC;"),
@@ -54,7 +54,7 @@ try:
     pg_conn.close()
 
     # Reconnect for cold runs
-    pg_conn = connect()  # Reassign pg_conn here
+    pg_conn = connect()  
     cursor = pg_conn.cursor()
     cursor.execute("SET geqo TO off;")
 
@@ -123,7 +123,7 @@ try:
     plt.xticks(rotation=45)
     plt.legend(title="SQL Feature", bbox_to_anchor=(1.05, 1), loc="upper left")
     plt.tight_layout()
-    plt.savefig("query_comparison.png")  # Save the diagram
+    plt.savefig("query_comparison.png") 
     plt.show()
 
 except Exception as error:
