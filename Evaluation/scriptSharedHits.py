@@ -29,10 +29,9 @@ class QueryResult:
     temp_written: int
 
 results: list[QueryResult] = []
-
-# Define queries
+    # Define queries
 queries = [
-    ("Q1_TagExtraction", """
+    ("Q3", """
         SELECT 
             posts.Id AS PostId,
             posts.Title,
@@ -54,7 +53,7 @@ queries = [
             TagCount DESC;
     """),
 
-    ("Q2_BadgeCategorization", """
+    ("Q5", """
         WITH BadgeCounts AS (
             SELECT 
                 users.Id AS UserId,
@@ -82,7 +81,47 @@ queries = [
         ORDER BY 
             BadgeCount DESC;
     """),
+
+    ("Q7", """
+        SELECT 
+            u.Id AS UserId,
+            u.DisplayName,
+            u.ProfileImageUrl,
+            LENGTH(ENCODE(convert_to(u.ProfileImageUrl, 'UTF8'), 'base64')) AS UrlSize
+        FROM 
+            users u
+        WHERE 
+            u.ProfileImageUrl IS NOT NULL 
+            AND u.ProfileImageUrl NOT LIKE 'http://i.stack.imgur.com/%'
+            AND LENGTH(ENCODE(convert_to(u.ProfileImageUrl, 'UTF8'), 'base64')) < 70
+    """),
+
+    ("Q15", """
+        WITH RECURSIVE UserInteractions AS (
+            SELECT 
+                c.UserId AS User1, p.OwnerUserId AS User2
+            FROM 
+                comments c
+            JOIN 
+                posts p ON c.PostId = p.Id
+            WHERE 
+                c.UserId IS NOT NULL 
+                AND p.OwnerUserId IS NOT NULL
+            UNION 
+            SELECT 
+                ui.User2 AS User1, p.OwnerUserId AS User2
+            FROM 
+                UserInteractions ui
+            JOIN 
+                posts p ON ui.User2 = p.OwnerUserId
+        )
+        SELECT  User1, User2
+        FROM UserInteractions
+        WHERE User1 = 13
+        GROUP BY User1, User2
+    """),
 ]
+
 
 # Execute queries and collect results
 try:
@@ -100,14 +139,11 @@ try:
         # Fetch PostgreSQL performance metrics
         cursor.execute("EXPLAIN (ANALYZE, BUFFERS) " + query)
         explain_output = cursor.fetchall()
-        print(f"EXPLAIN Output for {label}:", explain_output)  # Debugging output
 
         # Parse relevant metrics (shared hits, shared reads, temp writes)
         shared_hits = sum(int(line[0].split('=')[-1].strip().split()[0]) for line in explain_output if 'shared hit=' in line[0])
         shared_reads = sum(int(line[0].split('=')[-1].strip().split()[0]) for line in explain_output if 'shared read=' in line[0])
         temp_written = sum(int(line[0].split('=')[-1].strip().split()[0]) for line in explain_output if 'temp written=' in line[0])
-        
-        print(f"{label}: shared_hits={shared_hits}, shared_reads={shared_reads}, temp_written={temp_written}")  # Debugging output
         
         results.append(QueryResult(label, query, datetime.now(), json.dumps(rows), exec_time, shared_hits, shared_reads, temp_written))
 
@@ -115,25 +151,22 @@ try:
     df = pd.DataFrame(results)
     df.to_csv("query_results.csv", index=False)
 
-    # Verify DataFrame before visualization
-    print("Aggregated DataFrame:", df[['label', 'shared_hits', 'shared_reads', 'temp_written']])
-
     # Visualization - Only for shared_hits
     plt.figure(figsize=(12, 6))
-
+    
     # Filter data for only 'shared_hits'
     df_agg = df[['label', 'shared_hits']].melt(id_vars=['label'], value_vars=['shared_hits'])
-
-    # Debugging output
-    print("Filtered DataFrame for Plotting:", df_agg)
-
-    # Plot only shared_hits
-    sns.barplot(data=df_agg, x='label', y='value', hue='variable', palette='coolwarm')
-    plt.title("Query Performance - Shared Hits Only")
-    plt.xlabel("Query Label")
-    plt.ylabel("Shared Hits")
-    plt.xticks(rotation=45)
-    plt.legend(title="Metric Type")
+    
+    # Improved Plot Formatting
+    sns.set_style("whitegrid")
+    sns.set_palette("coolwarm")
+    ax = sns.barplot(data=df_agg, x='label', y='value', hue='variable')
+    ax.set_title("Query Performance - Shared Hits Only", fontsize=14, fontweight='bold')
+    ax.set_xlabel("Query Label", fontsize=12)
+    ax.set_ylabel("Shared Hits", fontsize=12)
+    plt.xticks(rotation=45, fontsize=10)
+    plt.yticks(fontsize=10)
+    plt.legend(title="Metric Type", fontsize=10)
     plt.tight_layout()
     plt.savefig("query_shared_hits.png")
     plt.show()
