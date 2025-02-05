@@ -6,4 +6,4 @@ SELECT
 FROM 
     posts
 WHERE 
-    posts.CreationDate >= NOW() - INTERVAL '7 days';
+    posts.CreationDate >= DATE '2014-09-01' - INTERVAL '7 days';
