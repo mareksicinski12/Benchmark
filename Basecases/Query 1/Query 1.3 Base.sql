@@ -7,7 +7,7 @@ WITH RecentPosts AS (
     FROM 
         posts
     WHERE 
-        CreationDate >= NOW() - INTERVAL '7 days'
+        CreationDate >= DATE '2014-09-01' - INTERVAL '7 days'
 )
 SELECT 
     RecentPosts.PostId,
