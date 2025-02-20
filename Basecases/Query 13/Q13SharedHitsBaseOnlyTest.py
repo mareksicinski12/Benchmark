@@ -272,8 +272,8 @@ try:
              ha='center', va='bottom', fontsize=16, color='black')  # Add label at max
 
     plt.tight_layout(pad=3)
-    plt.savefig("query_performance_shared_hits_vs_exec_time.png", dpi=300, bbox_inches='tight')
-    plt.savefig("query_performance_shared_hits_vs_exec_time.svg", format='svg')
+    plt.savefig("BASEquery_performance_shared_hits_vs_exec_time.png", dpi=300, bbox_inches='tight')
+    plt.savefig("BASEquery_performance_shared_hits_vs_exec_time.svg", format='svg')
     plt.show()
 
 except Exception as error:
