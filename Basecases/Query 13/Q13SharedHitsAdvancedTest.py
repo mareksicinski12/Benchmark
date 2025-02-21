@@ -29,7 +29,7 @@ results = []
 
 # Define the queries to test
 queries = [
-    ("Query", """-- Top 10 users by reputation and their post counts
+    ("Simple", """-- Top 10 users by reputation and their post counts
 SELECT 
     u.Id,
     u.DisplayName,
@@ -93,47 +93,7 @@ ORDER BY
     u.Reputation DESC
 LIMIT 10;
     """),
-    ("Semi\nAdvanced", """SELECT 
-    u.Id,
-    u.DisplayName,
-    u.Reputation,
-    COUNT(p.Id) AS PostCount,
-    COALESCE(
-        CONCAT('BEST POST: ', (
-            SELECT 
-                COALESCE(p1.Title, 'No Title')
-            FROM 
-                posts p1
-            WHERE 
-                p1.OwnerUserId = u.Id
-            ORDER BY 
-                p1.Score DESC
-            LIMIT 1
-        )),
-        'No Title'
-    ) AS BestPost,
-    CONCAT(
-        u.DisplayName, 
-        ' is with us for: ',
-        EXTRACT(YEAR FROM AGE(NOW(), u.CreationDate))::TEXT, 
-        ' years',
-        CASE
-            WHEN EXTRACT(MONTH FROM AGE(NOW(), u.CreationDate)) > 0 THEN
-                CONCAT(' and ', EXTRACT(MONTH FROM AGE(NOW(), u.CreationDate))::TEXT, ' months') 
-            ELSE
-                '' -- No months displayed if the value is 0
-        END,
-        ' already!'
-    ) AS Membership                               
-FROM 
-    users u
-LEFT JOIN 
-    posts p ON u.Id = p.OwnerUserId
-GROUP BY 
-    u.Id, u.DisplayName, u.Reputation
-ORDER BY 
-    u.Reputation DESC
-LIMIT 10;"""), ("Advanced", """-- CTE for post-related metrics: calculates post count, cumulative score, and post date range for each user
+    ("Advanced", """-- CTE for post-related metrics: calculates post count, cumulative score, and post date range for each user
 WITH UserMetrics AS (
     SELECT 
         p.OwnerUserId AS UserId,
@@ -349,6 +309,10 @@ try:
     agg["exec_min_ms"] = agg["exec_min"] * 1000
     agg["exec_max_ms"] = agg["exec_max"] * 1000
 
+    # Scale shared hits to thousands for plotting (i.e. 70k instead of 70000)
+    agg["shared_hits_median_k"] = agg["shared_hits_median"] / 1000
+    agg["shared_hits_max_k"] = agg["shared_hits_max"] / 1000
+
     # Plotting the variation (median with min/max error bars) for execution time and shared hits
     sns.set_context("talk")
     sns.set_style("whitegrid")
@@ -360,12 +324,11 @@ try:
         data=agg,
         x="label",
         y="exec_median_ms",
-        palette=["#1f77b4"],
+        palette=["#ff7f0e"],
         ax=ax1,
         errwidth=2,
         capsize=0.2
     )
-    #ax1.set_title("", fontsize=24)
     ax1.set_ylabel("Milliseconds [ms]", fontsize=20)
     ax1.set_xlabel("\nExecution Time\n(Median ± Variation)", fontsize=20)
     ax1.tick_params(axis='both', labelsize=18)
@@ -386,29 +349,29 @@ try:
     sns.barplot(
         data=agg,
         x="label",
-        y="shared_hits_median",
-        palette=["#ff7f0e"],
+        y="shared_hits_median_k",  # Use the scaled values
+        palette=["#1f77b4"],
         ax=ax2,
         errwidth=2,
         capsize=0.2
     )
-    #ax2.set_title("", fontsize=24)
-    ax2.set_ylabel("Shared Hit Blocks", fontsize=20)
+    ax2.set_ylabel("Shared Hit Blocks (x1000)", fontsize=20)
     ax2.set_xlabel("\nShared Hits\n(Median ± Variation)", fontsize=20)
     ax2.tick_params(axis='both', labelsize=18)
-    # Only show max values
+    # Add manual annotations for the max values
     for idx, row in agg.iterrows():
-
-        ax2.text(idx, row["shared_hits_max"], f"{row['shared_hits_max']}",
-             ha='center', va='bottom', fontsize=16, color='black')  # Add label at max
+        ax2.text(idx, row["shared_hits_max_k"], f"{row['shared_hits_max_k']:.1f}k",
+                 ha='center', va='bottom', fontsize=16, color='black')
 
     plt.tight_layout(pad=3)
-    plt.savefig("ADVANCED_query_performance_shared_hits_vs_exec_time.png", dpi=300, bbox_inches='tight')
-    plt.savefig("ADVANCED_query_performance_shared_hits_vs_exec_time.svg", format='svg')
+    plt.savefig("Q13_ADVANCEDquery_performance_shared_hits_vs_exec_time.png", dpi=300, bbox_inches='tight')
+    plt.savefig("Q13_ADVANCEDquery_performance_shared_hits_vs_exec_time.svg", format='svg')
     plt.show()
 
 except Exception as error:
     print(f"Error: {error}")
 finally:
-    if cursor: cursor.close()
-    if pg_conn: pg_conn.close()
+    if cursor:
+        cursor.close()
+    if pg_conn:
+        pg_conn.close()
