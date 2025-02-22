@@ -9,9 +9,9 @@ import seaborn as sns
 
 # Configuration
 hostname = 'localhost'
-database = 'MK555'
+database = 'rn555'
 username = 'postgres'
-pwd = 'dupa1234'
+pwd = 'Mareksql'
 port_id = 5432
 
 pg_conn = None
@@ -27,7 +27,7 @@ class QueryResult:
 
 results = []
 
-# [Queries remain exactly the same as original] 
+# Define the queries to test (same as original)
 queries = [
     ("Simple", """-- Top 10 users by reputation and their post counts
 SELECT 
@@ -201,7 +201,7 @@ def extract_estimated_cost(plan_json):
     return plan_json["Plan"]["Total Cost"]
 
 try:
-    # Initial database setup (same as original)
+    # Initial database setup
     pg_conn = connect()
     cursor = pg_conn.cursor()
     cursor.execute("CHECKPOINT;")
@@ -211,29 +211,40 @@ try:
     cursor = pg_conn.cursor()
     cursor.execute("SET geqo TO off;")
 
-    # Measurement runs (same warmup/execution logic)
+    # For each query, perform warmup runs then measurement runs
     for label, query in queries:
-        for _ in range(3):  # warmup
+        # Warmup runs (to ensure caches are warmed)
+        for _ in range(3):
             cursor.execute("EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) " + query)
             cursor.fetchall()
         
-        for run in range(11):  # measurement
+        # Measurement runs
+        for run in range(11):
             start_time = time.perf_counter_ns()
             cursor.execute("EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) " + query)
             explain_output = cursor.fetchone()[0]
-            plan_json = json.loads(explain_output)[0] if isinstance(explain_output, str) else explain_output[0]
+            # Check if explain_output is a string; if so, parse it
+            if isinstance(explain_output, str):
+                plan_list = json.loads(explain_output)
+            else:
+                plan_list = explain_output
+            # The output is a list with one element (the top-level plan)
+            plan_json = plan_list[0]
+            exec_time = (time.perf_counter_ns() - start_time) / 1e9  # seconds
+            estimated_cost = extract_estimated_cost(plan_json)
             
             results.append(QueryResult(
                 label=label,
                 query=query,
                 bench_time=datetime.now(),
-                exec_time=(time.perf_counter_ns() - start_time) / 1e9,
-                estimated_cost=extract_estimated_cost(plan_json)
+                exec_time=exec_time,
+                estimated_cost=estimated_cost
             ))
     
-    # Data processing (same structure, different metric)
+    # Convert collected results to a Pandas DataFrame
     df = pd.DataFrame([result.__dict__ for result in results])
     
+    # Group by query label and compute median, min, and max
     agg = df.groupby("label").agg(
         exec_median=("exec_time", "median"),
         exec_min=("exec_time", "min"),
@@ -243,49 +254,68 @@ try:
         cost_max=("estimated_cost", "max")
     ).reset_index()
 
-    # Convert to milliseconds (keep same time scaling)
+    # Convert execution time from seconds to milliseconds for plotting
     agg["exec_median_ms"] = agg["exec_median"] * 1000
     agg["exec_min_ms"] = agg["exec_min"] * 1000
     agg["exec_max_ms"] = agg["exec_max"] * 1000
 
-    # Visualization (identical to original, only labels changed)
+    # Scale estimated costs to thousands for plotting
+    agg["cost_median_k"] = agg["cost_median"] / 1000
+    agg["cost_max_k"] = agg["cost_max"] / 1000
+
+    # Plotting the variation (median with min/max error bars)
     sns.set_context("talk")
     sns.set_style("whitegrid")
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(18, 8))
     fig.suptitle("Top 10 users by reputation and their post counts", fontsize=20, fontweight='bold')
 
-    # Left plot: Execution time (unchanged)
-    sns.barplot(data=agg, x="label", y="exec_median_ms", palette=["#ff7f0e"], ax=ax1, errwidth=2, capsize=0.2)
+    # --- Execution Time Plot ---
+    sns.barplot(
+        data=agg,
+        x="label",
+        y="exec_median_ms",
+        palette=["#ff7f0e"],
+        ax=ax1,
+        errwidth=2,
+        capsize=0.2
+    )
     ax1.set_ylabel("Milliseconds [ms]", fontsize=20)
     ax1.set_xlabel("\nExecution Time\n(Median ± Variation)", fontsize=20)
     ax1.tick_params(axis='both', labelsize=18)
-    
-    # Right plot: Estimated Cost (same style as shared_hits)
-    sns.barplot(data=agg, x="label", y="cost_median", palette=["#1f77b4"], ax=ax2, errwidth=2, capsize=0.2)
-    ax2.set_ylabel("Computational Units", fontsize=20)
-    ax2.set_xlabel("\nPlanner's Estimated Total Cost\n(Median)", fontsize=20)
-    ax2.tick_params(axis='both', labelsize=18)
-
-    # Identical error bar and annotation logic
+    # Add manual error bars (min to max)
     for idx, row in agg.iterrows():
-        # Time plot annotations
-        ax1.plot([idx, idx], [row["exec_min_ms"], row["exec_max_ms"]], 
+        ax1.plot([idx, idx], [row["exec_min_ms"], row["exec_max_ms"]],
                  color='black', linewidth=3)
-        ax1.plot([idx-0.2, idx+0.2], [row["exec_min_ms"], row["exec_min_ms"]], 
+        ax1.plot([idx-0.2, idx+0.2], [row["exec_min_ms"], row["exec_min_ms"]],
                  color='black', linewidth=3)
-        ax1.plot([idx-0.2, idx+0.2], [row["exec_max_ms"], row["exec_max_ms"]], 
+        ax1.plot([idx-0.2, idx+0.2], [row["exec_max_ms"], row["exec_max_ms"]],
                  color='black', linewidth=3)
         ax1.text(idx, row["exec_min_ms"], f"{row['exec_min_ms']:.1f}",
                  ha='center', va='top', fontsize=16, color='black')
         ax1.text(idx, row["exec_max_ms"], f"{row['exec_max_ms']:.1f}",
                  ha='center', va='bottom', fontsize=16, color='black')
-        
-        # Cost plot annotations
-        ax2.text(idx, row["cost_max"], f"{row['cost_max']:.1f}",
+
+    # --- Estimated Cost Plot ---
+    sns.barplot(
+        data=agg,
+        x="label",
+        y="cost_median_k",
+        palette=["#1f77b4"],
+        ax=ax2,
+        errwidth=2,
+        capsize=0.2
+    )
+    ax2.set_ylabel("Computational Units", fontsize=20)
+    ax2.set_xlabel("\nPlanner's Estimated Total Cost\n(Median)", fontsize=20)
+    ax2.tick_params(axis='both', labelsize=18)
+    # Add manual annotations for the max values
+    for idx, row in agg.iterrows():
+        ax2.text(idx, row["cost_max_k"], f"{row['cost_max_k']:.1f}k",
                  ha='center', va='bottom', fontsize=16, color='black')
 
     plt.tight_layout(pad=3)
-    plt.savefig("query_performance_estimated_cost_vs_exec_time.png", dpi=300, bbox_inches='tight')
+    plt.savefig("Q13_ADVANCEDquery_performance_estimated_cost_vs_exec_time.png", dpi=300, bbox_inches='tight')
+    plt.savefig("Q13_ADVANCEDquery_performance_estimated_cost_vs_exec_time.svg", format='svg')
     plt.show()
 
 except Exception as error:
