@@ -40,7 +40,7 @@ UserPosts AS (
 		JOIN UserAcceptedAnswers ua ON u.Id = ua.OwnerUserId
 		JOIN posts p ON u.Id = p.OwnerUserId
 	WHERE 
-		bc.NumberOfBadges > 50 
+		bc.NumberOfBadges > 10 
 		AND ua.AcceptedAnswerCount > 5
 		AND p.Title IS NOT NULL
 	ORDER BY 
