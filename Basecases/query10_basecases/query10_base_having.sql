@@ -10,5 +10,5 @@ JOIN badges b ON u.Id = b.UserId
 JOIN posts p ON u.Id = p.OwnerUserId
 WHERE p.Title IS NOT NULL
 GROUP BY u.Id, u.DisplayName, u.Reputation, p.Title, p.ViewCount
-HAVING COUNT(b.Id) > 50
+HAVING COUNT(b.Id) > 10
 ORDER BY u.Reputation DESC;
