@@ -22,12 +22,12 @@ class QueryResult:
     label: str
     query: str
     bench_time: datetime
-    exec_time: float      
-    estimated_cost: float  
+    exec_time: float      # measured in seconds
+    estimated_cost: float  # planner's estimated cost
 
 results = []
 
-
+# [Queries remain exactly the same as original] 
 queries = [
     ("Simple", """-- Top 10 users by reputation and their post counts
 SELECT 
@@ -262,8 +262,8 @@ try:
     
     # Right plot: Estimated Cost (same style as shared_hits)
     sns.barplot(data=agg, x="label", y="cost_median", palette=["#1f77b4"], ax=ax2, errwidth=2, capsize=0.2)
-    ax2.set_ylabel("Estimated Cost (Planner Units)", fontsize=20)
-    ax2.set_xlabel("\nPlanner's Estimated Cost\n(Median ± Variation)", fontsize=20)
+    ax2.set_ylabel("Computational Units", fontsize=20)
+    ax2.set_xlabel("\nPlanner's Estimated Total Cost\n(Median)", fontsize=20)
     ax2.tick_params(axis='both', labelsize=18)
 
     # Identical error bar and annotation logic
