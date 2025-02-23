@@ -28,95 +28,162 @@ results = []
 
 # Define the queries to test
 queries = [
-    ("Q3", """
-        SELECT 
-            posts.Id AS PostId,
-            posts.Title,
-            posts.Tags AS OriginalTags,
-            json_agg(tags.tag_name) AS TagsAsJSON,
-            COUNT(tags.tag_name) AS TagCount
-        FROM 
-            posts
-        LEFT JOIN 
-            LATERAL (
-                SELECT match[1] AS tag_name
-                FROM regexp_matches(posts.Tags, '<([^<>]+)>', 'g') AS match
-            ) tags ON true
-        WHERE 
-            posts.Tags IS NOT NULL
-        GROUP BY 
-            posts.Id, posts.Title, posts.Tags
-        ORDER BY 
-            TagCount DESC;
+    ("Simple", """-- Top 10 users by reputation and their post counts
+SELECT 
+    u.Id,
+    u.DisplayName,
+    u.Reputation,
+    COUNT(p.Id) AS PostCount
+FROM 
+    users u
+LEFT JOIN 
+    posts p ON u.Id = p.OwnerUserId
+GROUP BY 
+    u.Id, u.DisplayName, u.Reputation
+ORDER BY 
+    u.Reputation DESC
+LIMIT 10;
     """),
 
-    ("Q5", """
-        WITH BadgeCounts AS (
+    ("Window\nFunction", """-- Using Window Functions
+WITH RankedUsers AS (
+    SELECT 
+        u.Id,
+        u.DisplayName,
+        u.Reputation,
+        COUNT(p.Id) AS PostCount,
+        ROW_NUMBER() OVER (ORDER BY u.Reputation DESC) AS RowNum
+    FROM 
+        users u
+    LEFT JOIN 
+        posts p ON u.Id = p.OwnerUserId
+    GROUP BY 
+        u.Id, u.DisplayName, u.Reputation
+)
+SELECT 
+    Id,
+    DisplayName,
+    Reputation,
+    PostCount
+FROM 
+    RankedUsers
+WHERE 
+    RowNum <= 10;
+    """),
+
+    ("Subquery", """-- Using Subquery to Pre-Aggregate Post Counts
+SELECT 
+    u.Id,
+    u.DisplayName,
+    u.Reputation,
+    COALESCE(PostCounts.PostCount, 0) AS PostCount
+FROM 
+    users u
+LEFT JOIN (
+    SELECT 
+        p.OwnerUserId,
+        COUNT(p.Id) AS PostCount
+    FROM 
+        posts p
+    GROUP BY 
+        p.OwnerUserId
+) PostCounts ON u.Id = PostCounts.OwnerUserId
+ORDER BY 
+    u.Reputation DESC
+LIMIT 10;
+    """),
+    ("Advanced", """-- CTE for post-related metrics: calculates post count, cumulative score, and post date range for each user
+WITH UserMetrics AS (
+    SELECT 
+        p.OwnerUserId AS UserId,
+        COUNT(p.Id) AS PostCount,
+        SUM(p.Score) AS TotalScore,
+        MIN(p.CreationDate) AS FirstPostDate,
+        MAX(p.CreationDate) AS LastPostDate
+    FROM 
+        posts p
+    GROUP BY 
+        p.OwnerUserId
+),
+
+-- CTE for user reputation rankings
+UserRankings AS (
+    SELECT 
+        u.Id AS UserId,
+        u.Reputation,
+        RANK() OVER (ORDER BY u.Reputation DESC) AS ReputationRank
+    FROM 
+        users u
+)
+
+-- top 10 users with detailed metrics
+SELECT 
+    u.Id,
+    u.DisplayName,
+    u.Reputation,
+    COALESCE(um.PostCount, 0) AS PostCount,  -- Total posts
+    COALESCE(um.TotalScore, 0) AS TotalScore, -- Cumulative post score
+
+    -- Best post title
+    COALESCE(
+        CONCAT('BEST POST: ', (
             SELECT 
-                users.Id AS UserId,
-                users.DisplayName AS UserName,
-                COUNT(badges.Id) AS BadgeCount
+                COALESCE(p1.Title, 'No Title')
             FROM 
-                users
-            LEFT JOIN 
-                badges ON users.Id = badges.UserId
-            GROUP BY 
-                users.Id, users.DisplayName
-        )
-        SELECT 
-            UserId,
-            UserName,
-            BadgeCount,
-            CASE 
-                WHEN BadgeCount = 0 THEN 'No Badges'
-                WHEN BadgeCount BETWEEN 1 AND 5 THEN 'Bronze'
-                WHEN BadgeCount BETWEEN 6 AND 15 THEN 'Silver'
-                ELSE 'Gold'
-            END AS BadgeCategory
-        FROM 
-            BadgeCounts
-        ORDER BY 
-            BadgeCount DESC;
-    """),
-
-    ("Q7", """
-        SELECT 
-            u.Id AS UserId,
-            u.DisplayName,
-            u.ProfileImageUrl,
-            LENGTH(ENCODE(convert_to(u.ProfileImageUrl, 'UTF8'), 'base64')) AS UrlSize
-        FROM 
-            users u
-        WHERE 
-            u.ProfileImageUrl IS NOT NULL 
-            AND u.ProfileImageUrl NOT LIKE 'http://i.stack.imgur.com/%'
-            AND LENGTH(ENCODE(convert_to(u.ProfileImageUrl, 'UTF8'), 'base64')) < 70
-    """),
-
-    ("Q15", """
-        WITH RECURSIVE UserInteractions AS (
-            SELECT 
-                c.UserId AS User1, p.OwnerUserId AS User2
-            FROM 
-                comments c
-            JOIN 
-                posts p ON c.PostId = p.Id
+                posts p1
             WHERE 
-                c.UserId IS NOT NULL 
-                AND p.OwnerUserId IS NOT NULL
-            UNION 
-            SELECT 
-                ui.User2 AS User1, p.OwnerUserId AS User2
-            FROM 
-                UserInteractions ui
-            JOIN 
-                posts p ON ui.User2 = p.OwnerUserId
-        )
-        SELECT  User1, User2
-        FROM UserInteractions
-        WHERE User1 = 13
-        GROUP BY User1, User2
-    """),
+                p1.OwnerUserId = u.Id
+            ORDER BY 
+                p1.Score DESC
+            LIMIT 1
+        )),
+        'No Title'
+    ) AS BestPost,
+
+    -- Membership duration in years and months
+    CONCAT(
+        u.DisplayName, 
+        ' is with us for: ',
+        EXTRACT(YEAR FROM AGE(NOW(), u.CreationDate))::TEXT, 
+        ' years',
+        CASE
+            WHEN EXTRACT(MONTH FROM AGE(NOW(), u.CreationDate)) > 0 THEN
+                CONCAT(' and ', EXTRACT(MONTH FROM AGE(NOW(), u.CreationDate))::TEXT, ' months')
+            ELSE
+                ''
+        END,
+        ' already!'
+    ) AS Membership,
+
+    -- Total badges earned
+    (SELECT COUNT(*) FROM badges b WHERE b.UserId = u.Id) AS BadgeCount,
+
+    -- Reputation rank
+    ur.ReputationRank,
+
+    -- Post date range
+    COALESCE(um.FirstPostDate, NULL) AS FirstPostDate,
+    COALESCE(um.LastPostDate, NULL) AS LastPostDate,
+
+    -- Upvote percentage
+    ROUND(
+        CASE 
+            WHEN (u.UpVotes + u.DownVotes) > 0 THEN 
+                (u.UpVotes::NUMERIC / (u.UpVotes + u.DownVotes)) * 100
+            ELSE 
+                0
+        END, 2
+    ) AS UpvotePercentage
+FROM 
+    users u
+LEFT JOIN 
+    UserMetrics um ON u.Id = um.UserId
+LEFT JOIN 
+    UserRankings ur ON u.Id = ur.UserId
+ORDER BY 
+    u.Reputation DESC
+LIMIT 10;"""),
+    
 ]
 
 def connect():
@@ -148,12 +215,10 @@ def accumulate_plan_info(plan_node, accum):
     for bf in buffer_fields:
         if bf in plan_node:
             accum[bf] += plan_node[bf]
-    
     if "Actual Rows" in plan_node:
         accum["Actual Rows"] += plan_node["Actual Rows"]
     if "Actual Loops" in plan_node:
         accum["Actual Loops"] += plan_node["Actual Loops"]
-   
     if "Plans" in plan_node:
         for subplan in plan_node["Plans"]:
             accumulate_plan_info(subplan, accum)
@@ -163,7 +228,7 @@ def extract_shared_hits_from_plan(plan_json):
     Given a JSON plan (as a dict), recursively accumulate and return the
     total number of 'Shared Hit Blocks'.
     """
-    
+    # Initialize accumulation dictionary with all needed keys
     accum = {
         "Shared Hit Blocks": 0.0,
         "Shared Read Blocks": 0.0,
@@ -200,7 +265,7 @@ try:
             cursor.fetchall()
         
         # Measurement runs
-        for run in range(3):
+        for run in range(11):
             start_time = time.perf_counter_ns()
             cursor.execute("EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) " + query)
             explain_output = cursor.fetchone()[0]
@@ -220,10 +285,9 @@ try:
                 shared_hits=shared_hits
             ))
     
-    
     df = pd.DataFrame([result.__dict__ for result in results])
     
-    
+    # Group by query label and compute median, min, and max for exec_time and shared_hits
     agg = df.groupby("label").agg(
         exec_median=("exec_time", "median"),
         exec_min=("exec_time", "min"),
@@ -233,29 +297,34 @@ try:
         shared_hits_max=("shared_hits", "max")
     ).reset_index()
 
+    # Convert execution time from seconds to milliseconds for plotting
     agg["exec_median_ms"] = agg["exec_median"] * 1000
     agg["exec_min_ms"] = agg["exec_min"] * 1000
     agg["exec_max_ms"] = agg["exec_max"] * 1000
 
+    # Scale shared hits to thousands for plotting (i.e. 70k instead of 70000)
+    agg["shared_hits_median_k"] = agg["shared_hits_median"] / 1000
+    agg["shared_hits_max_k"] = agg["shared_hits_max"] / 1000
+
     sns.set_context("talk")
     sns.set_style("whitegrid")
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(18, 8))
+    fig.suptitle("Top 10 users by reputation and their post counts", fontsize=20, fontweight='bold')
 
-    # Execution Time Plot 
+    # --- Execution Time Plot ---
     sns.barplot(
         data=agg,
         x="label",
         y="exec_median_ms",
-        palette=["#1f77b4"],
+        palette=["#ff7f0e"],
         ax=ax1,
         errwidth=2,
         capsize=0.2
     )
-    ax1.set_title("Execution Time\n(Median ± Variation)", fontsize=24)
     ax1.set_ylabel("Milliseconds [ms]", fontsize=20)
-    ax1.set_xlabel("Query", fontsize=20)
+    ax1.set_xlabel("\nExecution Time\n(Median ± Variation)", fontsize=20)
     ax1.tick_params(axis='both', labelsize=18)
-    
+
     for idx, row in agg.iterrows():
         ax1.plot([idx, idx], [row["exec_min_ms"], row["exec_max_ms"]],
                  color='black', linewidth=3)
@@ -268,40 +337,32 @@ try:
         ax1.text(idx, row["exec_max_ms"], f"{row['exec_max_ms']:.1f}",
                  ha='center', va='bottom', fontsize=16, color='black')
 
-    # Shared Hits Plot 
+    # --- Shared Hits Plot ---
     sns.barplot(
         data=agg,
         x="label",
-        y="shared_hits_median",
-        palette=["#ff7f0e"],
+        y="shared_hits_median_k",  
+        palette=["#1f77b4"],
         ax=ax2,
         errwidth=2,
         capsize=0.2
     )
-    ax2.set_title("Shared Hits\n(Median ± Variation)", fontsize=24)
-    ax2.set_ylabel("Shared Hit Blocks", fontsize=20)
-    ax2.set_xlabel("Query", fontsize=20)
+    ax2.set_ylabel("Shared Hit Blocks (x1000)", fontsize=20)
+    ax2.set_xlabel("\nShared Hits\n(Median ± Variation)", fontsize=20)
     ax2.tick_params(axis='both', labelsize=18)
-
     for idx, row in agg.iterrows():
-        ax2.plot([idx, idx], [row["shared_hits_min"], row["shared_hits_max"]],
-                 color='black', linewidth=3)
-        ax2.plot([idx-0.2, idx+0.2], [row["shared_hits_min"], row["shared_hits_min"]],
-                 color='black', linewidth=3)
-        ax2.plot([idx-0.2, idx+0.2], [row["shared_hits_max"], row["shared_hits_max"]],
-                 color='black', linewidth=3)
-        ax2.text(idx, row["shared_hits_min"], f"{row['shared_hits_min']}",
-                 ha='center', va='top', fontsize=16, color='black')
-        ax2.text(idx, row["shared_hits_max"], f"{row['shared_hits_max']}",
+        ax2.text(idx, row["shared_hits_max_k"], f"{row['shared_hits_max_k']:.1f}k",
                  ha='center', va='bottom', fontsize=16, color='black')
 
     plt.tight_layout(pad=3)
-    plt.savefig("query_performance_shared_hits_vs_exec_time.png", dpi=300, bbox_inches='tight')
-    plt.savefig("query_performance_shared_hits_vs_exec_time.svg", format='svg')
+    plt.savefig("Q13_ADVANCEDquery_performance_shared_hits_vs_exec_time.png", dpi=300, bbox_inches='tight')
+    plt.savefig("Q13_ADVANCEDquery_performance_shared_hits_vs_exec_time.svg", format='svg')
     plt.show()
 
 except Exception as error:
     print(f"Error: {error}")
 finally:
-    if cursor: cursor.close()
-    if pg_conn: pg_conn.close()
+    if cursor:
+        cursor.close()
+    if pg_conn:
+        pg_conn.close()
