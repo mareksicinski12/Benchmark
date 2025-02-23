@@ -1,5 +1,3 @@
---this query uses query 12 as a base  
---it returns score category for each post's group for a one user and post count of this particular group 
 WITH AvgPostScore AS (
     SELECT 
         AVG(p.Score) AS AverageScore
