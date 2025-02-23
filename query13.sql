@@ -11,7 +11,6 @@ WITH UserMetrics AS (
         p.OwnerUserId
 ),
 
--- CTE for user reputation rankings
 UserRankings AS (
     SELECT 
         u.Id AS UserId,
@@ -21,13 +20,12 @@ UserRankings AS (
         users u
 )
 
--- top 10 users with detailed metrics
 SELECT 
     u.Id,
     u.DisplayName,
     u.Reputation,
-    COALESCE(um.PostCount, 0) AS PostCount,  -- Total posts
-    COALESCE(um.TotalScore, 0) AS TotalScore, -- Cumulative post score
+    COALESCE(um.PostCount, 0) AS PostCount,  
+    COALESCE(um.TotalScore, 0) AS TotalScore, 
 
     -- Best post title
     COALESCE(
