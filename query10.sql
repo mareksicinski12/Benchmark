@@ -1,5 +1,3 @@
---comparing to base - query retrieves top 3 posts of users with the most views
---put these post titles into an array showing the date of last post added 
 WITH BadgeCount AS (
 	SELECT
 		b.UserId,
