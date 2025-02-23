@@ -7,11 +7,10 @@ import psycopg2
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Configuration
 hostname = 'localhost'
 database = 'postgres'
 username = 'postgres'
-pwd = 'Piotrsql'
+pwd = 'postgres'
 port_id = 5432
 
 pg_conn = None
@@ -22,7 +21,7 @@ class QueryResult:
     label: str
     query: str
     bench_time: datetime
-    exec_time: float      # measured in seconds
+    exec_time: float      
     shared_hits: int
 
 results = []
@@ -216,12 +215,10 @@ def accumulate_plan_info(plan_node, accum):
     for bf in buffer_fields:
         if bf in plan_node:
             accum[bf] += plan_node[bf]
-    # Also accumulate "Actual Rows" and "Actual Loops" (if needed)
     if "Actual Rows" in plan_node:
         accum["Actual Rows"] += plan_node["Actual Rows"]
     if "Actual Loops" in plan_node:
         accum["Actual Loops"] += plan_node["Actual Loops"]
-    # Recurse if there are subplans
     if "Plans" in plan_node:
         for subplan in plan_node["Plans"]:
             accumulate_plan_info(subplan, accum)
@@ -251,7 +248,6 @@ def extract_shared_hits_from_plan(plan_json):
     return int(accum["Shared Hit Blocks"])
 
 try:
-    # Initial database setup
     pg_conn = connect()
     cursor = pg_conn.cursor()
     cursor.execute("CHECKPOINT;")
@@ -273,14 +269,12 @@ try:
             start_time = time.perf_counter_ns()
             cursor.execute("EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) " + query)
             explain_output = cursor.fetchone()[0]
-            # Check if explain_output is a string; if so, parse it
             if isinstance(explain_output, str):
                 plan_list = json.loads(explain_output)
             else:
                 plan_list = explain_output
-            # The output is a list with one element (the top-level plan)
             plan_json = plan_list[0]
-            exec_time = (time.perf_counter_ns() - start_time) / 1e9  # seconds
+            exec_time = (time.perf_counter_ns() - start_time) / 1e9  
             shared_hits = extract_shared_hits_from_plan(plan_json)
             
             results.append(QueryResult(
@@ -291,7 +285,6 @@ try:
                 shared_hits=shared_hits
             ))
     
-    # Convert collected results to a Pandas DataFrame
     df = pd.DataFrame([result.__dict__ for result in results])
     
     # Group by query label and compute median, min, and max for exec_time and shared_hits
@@ -313,7 +306,6 @@ try:
     agg["shared_hits_median_k"] = agg["shared_hits_median"] / 1000
     agg["shared_hits_max_k"] = agg["shared_hits_max"] / 1000
 
-    # Plotting the variation (median with min/max error bars) for execution time and shared hits
     sns.set_context("talk")
     sns.set_style("whitegrid")
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(18, 8))
@@ -332,7 +324,7 @@ try:
     ax1.set_ylabel("Milliseconds [ms]", fontsize=20)
     ax1.set_xlabel("\nExecution Time\n(Median ± Variation)", fontsize=20)
     ax1.tick_params(axis='both', labelsize=18)
-    # Add manual error bars (min to max)
+
     for idx, row in agg.iterrows():
         ax1.plot([idx, idx], [row["exec_min_ms"], row["exec_max_ms"]],
                  color='black', linewidth=3)
@@ -349,7 +341,7 @@ try:
     sns.barplot(
         data=agg,
         x="label",
-        y="shared_hits_median_k",  # Use the scaled values
+        y="shared_hits_median_k",  
         palette=["#1f77b4"],
         ax=ax2,
         errwidth=2,
@@ -358,7 +350,6 @@ try:
     ax2.set_ylabel("Shared Hit Blocks (x1000)", fontsize=20)
     ax2.set_xlabel("\nShared Hits\n(Median ± Variation)", fontsize=20)
     ax2.tick_params(axis='both', labelsize=18)
-    # Add manual annotations for the max values
     for idx, row in agg.iterrows():
         ax2.text(idx, row["shared_hits_max_k"], f"{row['shared_hits_max_k']:.1f}k",
                  ha='center', va='bottom', fontsize=16, color='black')
