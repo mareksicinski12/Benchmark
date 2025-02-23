@@ -1,4 +1,4 @@
---query8
+
 WITH TagPostsStats AS (
 	SELECT 
 		UNNEST(string_to_array(Tags, ',')) AS TagName,
