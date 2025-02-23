@@ -1,8 +1,3 @@
---query14, 
---Retrieve All Posts and Their Recursive Parent-Child Relationships with User Details
---Uses recursive query to retrieve parent-child relationships of posts.
---Applies a text function to limit post bodies to 100 characters.
---Combines with a FULL OUTER JOIN to include posts without users and users without posts.
 WITH RECURSIVE PostHierarchy AS (
     SELECT 
         Id AS PostId, 
