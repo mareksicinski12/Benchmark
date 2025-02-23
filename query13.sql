@@ -1,4 +1,3 @@
--- CTE for post-related metrics: calculates post count, cumulative score, and post date range for each user
 WITH UserMetrics AS (
     SELECT 
         p.OwnerUserId AS UserId,
