@@ -1,5 +1,3 @@
---EXPLAIN (ANALYZE, FORMAT JSON, BUFFERS, SETTINGS)
---query9 
 WITH UserPostSummary AS (
     SELECT 
         u.Id AS UserId, 
