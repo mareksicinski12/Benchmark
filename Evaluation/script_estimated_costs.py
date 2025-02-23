@@ -7,11 +7,10 @@ import psycopg2
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Configuration
 hostname = 'localhost'
-database = 'rn555'
+database = 'postgres'
 username = 'postgres'
-pwd = 'Mareksql'
+pwd = 'postgres'
 port_id = 5432
 
 pg_conn = None
@@ -22,12 +21,12 @@ class QueryResult:
     label: str
     query: str
     bench_time: datetime
-    exec_time: float      # measured in seconds
-    estimated_cost: float  # planner's estimated cost
+    exec_time: float      
+    estimated_cost: float  
 
 results = []
 
-# Define the queries to test (same as original)
+# Define the queries to test 
 queries = [
     ("Simple", """-- Top 10 users by reputation and their post counts
 SELECT 
@@ -223,12 +222,10 @@ try:
             start_time = time.perf_counter_ns()
             cursor.execute("EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) " + query)
             explain_output = cursor.fetchone()[0]
-            # Check if explain_output is a string; if so, parse it
             if isinstance(explain_output, str):
                 plan_list = json.loads(explain_output)
             else:
                 plan_list = explain_output
-            # The output is a list with one element (the top-level plan)
             plan_json = plan_list[0]
             exec_time = (time.perf_counter_ns() - start_time) / 1e9  # seconds
             estimated_cost = extract_estimated_cost(plan_json)
@@ -269,7 +266,7 @@ try:
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(18, 8))
     fig.suptitle("Top 10 users by reputation and their post counts", fontsize=20, fontweight='bold')
 
-    # --- Execution Time Plot ---
+    # Execution Time Plot 
     sns.barplot(
         data=agg,
         x="label",
@@ -282,7 +279,7 @@ try:
     ax1.set_ylabel("Milliseconds [ms]", fontsize=20)
     ax1.set_xlabel("\nExecution Time\n(Median ± Variation)", fontsize=20)
     ax1.tick_params(axis='both', labelsize=18)
-    # Add manual error bars (min to max)
+    
     for idx, row in agg.iterrows():
         ax1.plot([idx, idx], [row["exec_min_ms"], row["exec_max_ms"]],
                  color='black', linewidth=3)
@@ -295,7 +292,7 @@ try:
         ax1.text(idx, row["exec_max_ms"], f"{row['exec_max_ms']:.1f}",
                  ha='center', va='bottom', fontsize=16, color='black')
 
-    # --- Estimated Cost Plot ---
+    # Estimated Cost Plot 
     sns.barplot(
         data=agg,
         x="label",
@@ -308,7 +305,7 @@ try:
     ax2.set_ylabel("Computational Units", fontsize=20)
     ax2.set_xlabel("\nPlanner's Estimated Total Cost\n(Median)", fontsize=20)
     ax2.tick_params(axis='both', labelsize=18)
-    # Add manual annotations for the max values
+    
     for idx, row in agg.iterrows():
         ax2.text(idx, row["cost_max_k"], f"{row['cost_max_k']:.1f}k",
                  ha='center', va='bottom', fontsize=16, color='black')
