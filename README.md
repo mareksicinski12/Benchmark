@@ -1,6 +1,6 @@
 # Benchmark
 ## Test Plan
-
+(Base cases for queries 3,5,7,15,16 are not available, because they are not as extensive compared to others queries and/or focused on using less commonly used features)
 | Test Case | Test Description | SQL Feature(s) Involved         | Expected Outcome                                                                 |
 |-----------|------------------|---------------------------------|---------------------------------------------------------------------------------|
 | 1         | Retrieve all posts along with their owner's display name, filtering posts created within the last 7 days. | JOIN, Time Functions                     | Posts with owner details filtered by recent creation dates.                     |
