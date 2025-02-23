@@ -1,4 +1,3 @@
---find the top 3 user with the third total comments count , query11
 WITH PostCommentStats AS (
     SELECT 
         p.Id AS PostId, 
