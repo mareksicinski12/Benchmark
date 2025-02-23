@@ -1,4 +1,3 @@
---query15
 WITH RECURSIVE UserInteractions AS (
     SELECT 
 	c.UserId AS User1, p.OwnerUserId AS User2
