@@ -233,7 +233,6 @@ try:
         shared_hits_max=("shared_hits", "max")
     ).reset_index()
 
-    # Convert execution time from seconds to milliseconds for plotting
     agg["exec_median_ms"] = agg["exec_median"] * 1000
     agg["exec_min_ms"] = agg["exec_min"] * 1000
     agg["exec_max_ms"] = agg["exec_max"] * 1000
